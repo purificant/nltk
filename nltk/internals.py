@@ -22,6 +22,7 @@ from xml.etree import ElementTree
 ##########################################################################
 # Java Via Command-Line
 ##########################################################################
+# test comment
 
 _java_bin = None
 _java_options = []

@@ -12,6 +12,7 @@ from nltk import word_tokenize
 from nltk.util import parallelize_preprocess
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
+# test comment
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)

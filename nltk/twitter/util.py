@@ -25,9 +25,6 @@ def credsfromfile(creds_file=None, subdir=None, verbose=False):
     )
 
 
-# test comment
-
-
 class Authenticate:
     """
     Methods for authenticating with Twitter.

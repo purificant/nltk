@@ -24,9 +24,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.x' # run with latest python version
+          python-version: '3.12.3' # use 3.12.3 to avoid pre-commit issue with 3.12.4
       - run: |
-          pip install pre-commit
+          pip install --upgrade pre-commit
           pre-commit run --all-files
 
   cache_nltk_data:

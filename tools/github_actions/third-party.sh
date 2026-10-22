@@ -13,15 +13,51 @@ fi
 # Installing the third-party software and the appropriate env variables.
 pushd "$THIRD_PARTY_DIR" 2>/dev/null || { mkdir -p "$THIRD_PARTY_DIR"; pushd "$THIRD_PARTY_DIR"; }
 
+# usage: sha256_ok <sha256> <file>. macOS 15+ ships Apple's own sha256sum, which
+# reads the check line from stdin only when given "-" and, without --strict, skips
+# a malformed line (an empty hash, say) and exits 0. Older macOS has only shasum.
+sha256_ok() {
+    if command -v sha256sum >/dev/null; then
+        echo "$1  $2" | sha256sum --strict -c -
+    else
+        echo "$1  $2" | shasum -a 256 --strict -c -
+    fi
+}
+
+# usage: fetch_verified <file> <sha256> <url>... Saves the first download that
+# matches the sha256, so a fallback source can never swap in other bytes.
+fetch_verified() {
+    local file_name="$1" sha256="$2" url
+    shift 2
+    for url in "$@"; do
+        # bounded so an unreachable host (134 s per attempt on runners, see 1e134feb7)
+        # or a stalled transfer can't hold up the next source for long
+        if curl -fL --retry 5 --retry-all-errors --connect-timeout 30 --speed-limit 1024 --speed-time 60 \
+            "$url" -o "$file_name" && sha256_ok "$sha256" "$file_name"; then
+            return 0
+        fi
+        echo "No verified ${file_name} from ${url}" >&2
+    done
+    return 1
+}
+
+stanford_downloads="https://downloads.cs.stanford.edu/nlp/software"
+# 302s each zip to stanford_downloads, kept in case Stanford moves the files
+stanford_redirector="https://nlp.stanford.edu/software"
+
 # Download nltk stanford dependencies
 # Downloaded to $THIRD_PARTY_DIR/stanford-corenlp
 # stanford_corenlp_package_zip_name=$(curl -s 'https://stanfordnlp.github.io/CoreNLP/' | grep -o 'stanford-corenlp-full-.*\.zip' | head -n1)
 stanford_corenlp_package_zip_name="stanford-corenlp-4.5.1.zip"
+stanford_corenlp_sha256="7d6f9d01a595d0f783ce805b9c32bcc8789cd2f299de719b2c71801bbd88605b"
 [[ ${stanford_corenlp_package_zip_name} =~ (.+)\.zip ]]
 stanford_corenlp_package_name=${BASH_REMATCH[1]}
 if [[ ! -d "${stanford_corenlp_package_name}" ]]; then
-    curl -L "https://nlp.stanford.edu/software/$stanford_corenlp_package_zip_name" -o "${stanford_corenlp_package_zip_name}"
-    # wget -nv "https://nlp.stanford.edu/software/$stanford_corenlp_package_zip_name"
+    # the Hugging Face URL is pinned to the commit that added 4.5.1
+    fetch_verified "${stanford_corenlp_package_zip_name}" "${stanford_corenlp_sha256}" \
+        "${stanford_downloads}/${stanford_corenlp_package_zip_name}" \
+        "https://huggingface.co/stanfordnlp/CoreNLP/resolve/6d357652fa33f61b7ebf8d5b2afafdb22f1df323/stanford-corenlp-latest.zip" \
+        "${stanford_redirector}/${stanford_corenlp_package_zip_name}"
     unzip -q "${stanford_corenlp_package_zip_name}"
     rm "${stanford_corenlp_package_zip_name}"
     mv "${stanford_corenlp_package_name}" 'stanford-corenlp'
@@ -30,11 +66,13 @@ fi
 # Downloaded to $THIRD_PARTY_DIR/stanford-parser
 # stanford_parser_package_zip_name=$(curl -s 'https://nlp.stanford.edu/software/lex-parser.shtml' | grep -o 'stanford-parser-full-.*\.zip' | head -n1)
 stanford_parser_package_zip_name="stanford-parser-full-2018-10-17.zip"
+stanford_parser_sha256="92d852af54c0727c2367b9ce267c53bf08f1551a08ec5dd92c357b8cc7b2bcd9"
 [[ ${stanford_parser_package_zip_name} =~ (.+)\.zip ]]
 stanford_parser_package_name=${BASH_REMATCH[1]}
 if [[ ! -d "${stanford_parser_package_name}" ]]; then
-    curl -L "https://nlp.stanford.edu/software/$stanford_parser_package_zip_name" -o "${stanford_parser_package_zip_name}"
-    # wget -nv "https://nlp.stanford.edu/software/$stanford_parser_package_zip_name"
+    fetch_verified "${stanford_parser_package_zip_name}" "${stanford_parser_sha256}" \
+        "${stanford_downloads}/${stanford_parser_package_zip_name}" \
+        "${stanford_redirector}/${stanford_parser_package_zip_name}"
     unzip -q "${stanford_parser_package_zip_name}"
     rm "${stanford_parser_package_zip_name}"
     mv "${stanford_parser_package_name}" 'stanford-parser'
@@ -43,11 +81,13 @@ fi
 # Downloaded to $THIRD_PARTY_DIR/stanford-postagger
 # stanford_tagger_package_zip_name=$(curl -s 'https://nlp.stanford.edu/software/tagger.shtml' | grep -o 'stanford-postagger-full-.*\.zip' | head -n1)
 stanford_tagger_package_zip_name="stanford-postagger-full-2018-10-16.zip"
+stanford_tagger_sha256="daae101e62315aedcb26d75710c2898879149933b56181c00b2f00903b31eb33"
 [[ ${stanford_tagger_package_zip_name} =~ (.+)\.zip ]]
 stanford_tagger_package_name=${BASH_REMATCH[1]}
 if [[ ! -d "${stanford_tagger_package_name}" ]]; then
-    curl -L "https://nlp.stanford.edu/software/$stanford_tagger_package_zip_name" -o "${stanford_tagger_package_zip_name}"
-    # wget -nv "https://nlp.stanford.edu/software/$stanford_tagger_package_zip_name"
+    fetch_verified "${stanford_tagger_package_zip_name}" "${stanford_tagger_sha256}" \
+        "${stanford_downloads}/${stanford_tagger_package_zip_name}" \
+        "${stanford_redirector}/${stanford_tagger_package_zip_name}"
     unzip -q "${stanford_tagger_package_zip_name}"
     rm "${stanford_tagger_package_zip_name}"
     mv "${stanford_tagger_package_name}" 'stanford-postagger'

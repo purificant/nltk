@@ -19,20 +19,18 @@ Mac/Unix
 #. Install Numpy (optional): run ``pip install --user -U numpy``
 #. Test installation: run ``python`` then type ``import nltk``
 
-For older versions of Python it might be necessary to install setuptools (see https://pypi.python.org/pypi/setuptools) and to install pip (``sudo easy_install pip``).
-
 Windows
 -------
 
 These instructions assume that you do not already have Python installed on your machine.
 
-32-bit binary installation
+64-bit binary installation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#. Install Python 3.12: https://www.python.org/downloads/ (avoid the 64-bit versions)
+#. Install Python 3.14: https://www.python.org/downloads/ (use the 64-bit installer)
 #. Install Numpy (optional): https://numpy.org/install/
 #. Install NLTK: https://pypi.python.org/pypi/nltk
-#. Test installation: ``Start>Python312``, then type ``import nltk``
+#. Test installation: ``Start>Python314``, then type ``import nltk``
 
 Installing Third-Party Software
 -------------------------------

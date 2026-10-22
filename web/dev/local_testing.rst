@@ -15,7 +15,8 @@ NLTK testing
 
 5. run 'tox' command from the root nltk folder. It will install dependencies
    and run ``pytest`` for all available interpreters.
-   You may also pass any pytest options here (for example, `-v` for verbose).
+   You may also pass any pytest options after ``--`` (for example, ``-v``
+   for verbose).
 
 It may take a long time at first run, but the subsequent runs will
 be much faster.
@@ -25,29 +26,30 @@ Please consult https://tox.wiki for more info about the tox tool.
 Examples
 --------
 
-Run tests for python 3.12 in verbose mode; executing only tests
+Run tests for python 3.14 in verbose mode; executing only tests
 that failed in the last test run::
 
-    tox -e py312 -- -v --failed
+    tox -e py314 -- -v --last-failed
 
 Run tree doctests for all available interpreters::
 
     tox -- tree.doctest
 
-Run a selected unit test for Python 3.12::
+Run a selected unit test file for Python 3.14. Paths are relative to
+``nltk/test``::
 
-    tox -e py312 -- -v nltk.test.unit.test_seekable_unicode_stream_reader
+    tox -e py314 -- -v unit/test_seekable_unicode_stream_reader.py
 
 By default, numpy, scipy and scikit-learn are installed in tox virtualenvs.
 This is slow, requires working build toolchain and is not always feasible.
 In order to skip numpy & friends, use ``..-nodeps`` environments::
 
-    tox -e py312-nodeps,py312,pypy
+    tox -e py314-nodeps,py314,pypy
 
 It is also possible to run tests without tox. This way NLTK would be tested
 only under single interpreter, but it may be easier to have numpy and other
 libraries installed this way. In order to run tests without tox, make sure
-to ``pip install -r test-requirements.txt`` and run ``pytest``::
+to ``pip install -e . -r requirements-ci.txt`` and run ``pytest``::
 
     pytest nltk/test/
 
@@ -65,10 +67,8 @@ Doctests are located at ``nltk/test/*.doctest`` text files and
 in docstrings for modules, classes, methods and functions.
 
 That said, doctests have their limitations and sometimes it is better to use
-unittests. Test should be written as unittest if some of the following apply:
-
-* test deals with non-ascii unicode and Python 2.x support is required;
-* test is a regression test that is not necessary for documentational purposes.
+unittests. Test should be written as unittest if it is a regression test that
+is not necessary for documentational purposes.
 
 Unittests currently reside in ``nltk/test/unit/test_*.py`` files; pytest
 is used for test running.
@@ -78,47 +78,38 @@ then it should be duplicated as doctest, but with a "# doctest: +SKIP" option.
 
 There are some gotchas with NLTK doctests (and with doctests in general):
 
-* Use ``print("foo")``, not ``print "foo"``: NLTK doctests act
-  like ``from __future__ import print_functions`` is in use.
-
 * Don't write ``+ELLIPSIS``, ``+NORMALIZE_WHITESPACE``,
   ``+IGNORE_EXCEPTION_DETAIL`` flags (they are already ON by default in NLTK).
 
-* Do not write doctests that have non-ascii output (they are not supported in
-  Python 2.x). Incorrect::
+* To skip a ``nltk/test/foo.doctest`` file when a condition is not met, write
+  a helper in ``nltk/test/foo_fixt.py``::
 
-      >>> greeting
-      u'Привет'
+      # <a comment describing why the doctest should be skipped>
 
-  The proper way is to rewrite such a doctest as a unittest.
-
-* In order to conditionally skip a doctest in a separate
-  ``nltk/test/foo.doctest`` file, create ``nltk.test/foo_fixt.py``
-  file from the following template::
-
-      # <a comment describing why should the test be skipped>
-
-      def setup_module(module):
+      def setup_module():
           import pytest
 
           if some_condition:
               pytest.skip("foo.doctest is skipped because <...>")
 
-* In order to conditionally skip all doctests from the module/class/function
-  docstrings, put the following function in a top-level module namespace::
+  and call it at the top of the doctest::
 
-      # <a comment describing why should the tests from this module be skipped>
+      >>> from nltk.test.foo_fixt import setup_module
+      >>> setup_module()
 
-      def setup_module(module):
-          import pytest
+  pytest does not load ``_fixt.py`` files by itself, so the doctest has to
+  make this call. The skip covers the whole file. For a missing package,
+  ``pytest.importorskip("numpy")`` checks and skips in one call.
 
-          if some_condition:
-              pytest.skip("doctests from nltk.<foo>.<bar> are skipped because <...>")
+* To skip a doctest in a module, class or function docstring, run the check
+  at the top of that docstring. The skip covers only that docstring. For an
+  external program, ``nltk/test/setup_fixt.py`` has ``check_binary``::
 
-  A good idea is to define ``__all__`` in such module and omit
-  ``setup_module`` from ``__all__``.
+      >>> from nltk.test.setup_fixt import check_binary
+      >>> check_binary('dot')
 
-  It is not possible to conditionally skip only some doctests from a module.
+  pytest does not run a module-level ``setup_module`` for docstring doctests,
+  so every docstring that needs the skip has to make the call.
 
 * Do not expect the exact float output; this may fail on some machines::
 
@@ -148,8 +139,8 @@ There are some gotchas with NLTK doctests (and with doctests in general):
 If the code requires some external dependencies, then
 
 * tests for this code should be skipped if the dependencies are not available:
-  use ``setup_module`` for doctests (as described above) and
+  skip doctests as described above and use
   ``@pytest.mark.skipif / @pytest.mark.skip`` decorators or ``pytest.skip``
   exception for unittests;
-* if the dependency is a Python package, it should be added to tox.ini
-  (but not to ..-nodeps environments).
+* if the dependency is a Python package, it should be added to
+  ``requirements-ci.txt`` and ``tox.ini`` (but not to ..-nodeps environments).

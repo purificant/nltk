@@ -65,7 +65,7 @@ repository [nltk/nltk](https://github.com/nltk/nltk/):
 - Install NLTK in editable mode with dependencies:
   ```bash
   pip install -e .
-  pip install -r pip-req.txt
+  pip install -r requirements-ci.txt tox
   ```
 - Install the pre-commit hooks:
   ```bash
@@ -124,7 +124,7 @@ Summary of our git branching model:
 - Do many small commits on that branch locally (`git add files-changed`,
   `git commit -m "Add some change"`);
 - Run the tests to make sure nothing breaks
-  (`pytest nltk/test` or `tox -e py313` if you are on Python 3.13);
+  (`pytest nltk/test` or `tox -e py314` if you are on Python 3.14);
 - Add your name to the `AUTHORS.md` file as a contributor;
 - Push to your fork on GitHub (with the name as your local branch:
   `git push origin branch-name`);
@@ -247,12 +247,12 @@ The [`.github/workflows/ci.yml`](https://github.com/nltk/nltk/blob/develop/.gith
    - verifies that `nltk.download()` works on all platforms (ubuntu, macos, windows).
 
  - The `test` job
-   - tests against supported Python versions (`3.10`, `3.11`, `3.12`, `3.13`, `3.14`).
-   - tests on `ubuntu-latest`, `macos-latest`, and `windows-latest`.
+   - tests Python `3.14` and `3.14t` on pull requests. On `develop`, in the merge queue, or with the `full-matrix` label, it also tests `3.10` to `3.13`.
+   - tests on `ubuntu-latest`, `macos-latest`, and `windows-latest`. `3.14t` runs on `ubuntu-latest` only.
    - performs these steps:
      - Downloads the `nltk` source code.
      - Sets up Python using whatever version is being checked in the current execution.
-     - Installs dependencies via `pip install -r pip-req.txt`.
+     - Installs dependencies via `pip install -r requirements-ci.txt`.
      - Downloads `nltk_data`.
      - Runs `pytest --numprocesses auto -rsx --doctest-modules nltk`.
 
@@ -268,15 +268,13 @@ pytest nltk/test
 pytest nltk/test/unit/test_tokenize.py
 
 # Run tests in parallel
-pip install pytest-xdist
 pytest --numprocesses auto nltk/test
 ```
 
 Using tox (to test against a specific Python version):
 
 ```bash
-pip install tox
-tox -e py313  # for Python 3.13
+tox -e py314  # for Python 3.14
 ```
 
 

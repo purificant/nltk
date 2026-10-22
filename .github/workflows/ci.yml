@@ -59,7 +59,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.13"  # or your chosen version
+          python-version: "3.14"  # or your chosen version
 
       - name: Install pre-commit
         run: pip install pre-commit
@@ -460,7 +460,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Install dependencies
         # The coverage test only reads probe *keys* and never calls a probe, so
@@ -490,7 +490,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Install build dependencies
         run: pip install build
